@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import logging
 import MySQLdb
 import MySQLdb.cursors
@@ -7,17 +8,18 @@ from classification import *
 from dbconfig import mysql
 import time
 import datetime
+import sys
 
 
 def crossvalidation():
     # Parameters for self-testing
-    MIN_OCCURENCES = 10
+    MIN_OCCURENCES = 80
     K_FOLD = 10
     EPSILON = 0
     CENTER = False
 
     # Prepare crossvalidation data set
-    crossvalidation = [[], [], [], [], [], [], [], [], [], []]
+    cv = [[], [], [], [], [], [], [], [], [], []]
 
     sql = "SELECT id, formula_in_latex FROM `wm_formula`"
     cursor.execute(sql)
@@ -29,7 +31,7 @@ def crossvalidation():
 
     for dataset in datasets:
         sql = ("SELECT id, data FROM `wm_raw_draw_data` "
-               "WHERE `accepted_formula_id` = " + str(dataset['id']))
+               "WHERE `accepted_formula_id` = %s" % str(dataset['id']))
         cursor.execute(sql)
         raw_datasets = cursor.fetchall()
         if len(raw_datasets) >= MIN_OCCURENCES:
@@ -39,12 +41,12 @@ def crossvalidation():
             i = 0
             for raw_data in raw_datasets:
                 raw_data_counter += 1
-                crossvalidation[i].append({'data': raw_data['data'],
-                                           'id': raw_data['id'],
-                                           'formula_id': dataset['id'],
-                                           'accepted_formula_id': dataset['id'],
-                                           'formula_in_latex': dataset['formula_in_latex']
-                                           })
+                cv[i].append({'data': raw_data['data'],
+                              'id': raw_data['id'],
+                              'formula_id': dataset['id'],
+                              'accepted_formula_id': dataset['id'],
+                              'formula_in_latex': dataset['formula_in_latex']
+                              })
                 i = (i + 1) % K_FOLD
 
     # Start getting validation results
@@ -57,11 +59,11 @@ def crossvalidation():
                                         'wrong': 0,
                                         'c10': 0,
                                         'w10': 0})
-        for testdata in crossvalidation[testset]:
+        for testdata in cv[testset]:
             start = time.time()
             raw_draw_data = testdata['data']
             if EPSILON > 0:
-                result_path = apply_douglas_peucker(pointLineList(raw_draw_data), EPSILON)
+                result_path = douglas_peucker(pointLineList(raw_draw_data), EPSILON)
             else:
                 result_path = pointLineList(raw_draw_data)
 
@@ -70,7 +72,7 @@ def crossvalidation():
 
             # Prepare datasets the algorithm may use
             datasets = []
-            for key, value in enumerate(crossvalidation):
+            for key, value in enumerate(cv):
                 if key == testset:
                     continue
                 else:
@@ -81,28 +83,28 @@ def crossvalidation():
             execution_time.append(end - start)
 
             answer_id = 0
-            if len(results) == 0 or results[0] is null:
+            if len(results) == 0:
                 # That should not happen. Threshold of maximum_dtw might be too
                 # high.
                 print("\nRaw_data_id = %i\n" % testdata['id'])
-                answer_id = key(results)
             else:
-                answer_id = key(results[0])
+                answer_id = results[0].keys()[0]
 
             if answer_id == testdata['formula_id']:
                 classification_accuracy[testset]['correct'] += 1
             else:
                 classification_accuracy[testset]['wrong'] += 1
 
-            if testdata['formula_id'] in results:
+            if testdata['formula_id'] in [r.keys()[0] for r in results]:
                 classification_accuracy[testset]['c10'] += 1
             else:
                 classification_accuracy[testset]['w10'] += 1
 
-            print("|")
+            print('|', end="")
+            sys.stdout.flush()
 
-        classification_accuracy[testset]['accuracy'] = (classification_accuracy[testset]['correct'] / (classification_accuracy[testset]['correct'] + classification_accuracy[testset]['wrong']))
-        classification_accuracy[testset]['a10'] = classification_accuracy[testset]['c10'] / (classification_accuracy[testset]['c10'] + classification_accuracy[testset]['w10'])
+        classification_accuracy[testset]['accuracy'] = (float(classification_accuracy[testset]['correct']) / (classification_accuracy[testset]['correct'] + classification_accuracy[testset]['wrong']))
+        classification_accuracy[testset]['a10'] = float(classification_accuracy[testset]['c10']) / (classification_accuracy[testset]['c10'] + classification_accuracy[testset]['w10'])
         print(classification_accuracy[testset])
         print("\n")
         print("Average time:")
@@ -117,14 +119,15 @@ def crossvalidation():
         t1sum += classification_accuracy[testset]['accuracy']
         t10sum += classification_accuracy[testset]['a10']
 
-    print(str(datetime.date.today()) + "\n")
-    print("The following %i symbols with %i raw dataset evaluated to\n" % (symbol_counter, raw_data_counter))
-    print(", ".join(symbols) + "\n")
-    print("Epsilon: " + EPSILON + "\n")
-    print("Center: " + CENTER + "\n")
-    print("* Top-1-Classification (" + K_FOLD + "-fold cross-validated): " + (t1sum/K_FOLD) + "\n")
-    print("* Top-10-Classification (" + K_FOLD + "-fold cross-validated): " + (t10sum/K_FOLD) + "\n")
-
+    print("\n" + str(datetime.date.today()) + "\n")
+    print("The following %i symbols were evaluated:" % symbol_counter)
+    print(", ".join(symbols))
+    print("raw datasets: %i" % raw_data_counter)
+    print("Epsilon: %0.2f" % EPSILON)
+    print("Center: %r" % CENTER)
+    print("* Top-1-Classification (%i-fold cross-validated): %0.5f" % (K_FOLD, (t1sum/K_FOLD)))
+    print("* Top-10-Classification (%i-fold cross-validated): %0.5f" % (K_FOLD, t10sum/K_FOLD))
+    print("Average time: %.5f seconds" % (sum(execution_time)/len(execution_time)))
 
 if __name__ == '__main__':
     logging.basicConfig(filename='selftest.log',
