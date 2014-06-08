@@ -76,7 +76,7 @@ def scale_and_center(pointlist, center=False):
     return pointlist
 
 
-def distance(p1, p2):
+def distance(p1, p2, squared=False):
     """ Calculate the squared eucliden distance of two points.
     @param  associative array $p1 first point
     @param  associative array $p2 second point
@@ -89,7 +89,10 @@ def distance(p1, p2):
     """
     dx = p1["x"] - p2["x"]
     dy = p1["y"] - p2["y"]
-    return sqrt(dx*dx + dy*dy)
+    if squared:
+        return (dx*dx + dy*dy)
+    else:
+        return sqrt(dx*dx + dy*dy)
 
 
 def dtw(A, B, simple=True):
@@ -126,7 +129,7 @@ def dtw(A, B, simple=True):
         #logging.warning(B)
         return 0
     from Dtw import Dtw
-    a = Dtw(A[:], B, distance)
+    a = Dtw(A[:], B[:], distance)  # Probably is slicing not necessary for B
 
     return a.calculate(simple)
 
@@ -239,9 +242,12 @@ def get_dimensions(pointlist):
 def get_probability_from_distance(results):
     """ Get a list of results with dtw and formula id and return a dict mapping
         formula-ids to probabilities.
+
+    >>> get_probability_from_distance([{'dtw': 5.638895307327028, 'formula_id': 33L}, {'dtw': 0.30368392840347985, 'formula_id': 31L}])
+    [{'p': 0.9952042189554645, 'formula_id': 31L}, {'p': 0.0047957810445354, 'formula_id': 33L}]
     """
     # check if one distance is 0 and meanwhile build sum of distances.
-    sum = 0.0
+    summe = 0.0
     modified = {}
     for result in results:
         formula_id = result['formula_id']
@@ -250,29 +256,29 @@ def get_probability_from_distance(results):
             return {formula_id: 1}
         else:
             modified[formula_id] = exp(-dtw)
-            sum += modified[formula_id]
+            summe += modified[formula_id]
 
     results = modified
 
     probabilities = []
     for formula_id, p in results.items():
-        probabilities.append({formula_id: p / sum})
-    return probabilities
+        probabilities.append({'formula_id': formula_id, 'p': p / summe})
+    return sorted(probabilities, key=lambda k: k['p'], reverse=True)
 
 
 def classify(datasets, A, epsilon=0):
     """
     Classify A with data from datasets and smoothing of epsilon.
-    @param  list datasets array(
-                                 array('data' => ...,
-                                       'accepted_formula_id' => ...,
-                                       'id' => ...,
-                                       'formula_in_latex' => ...,
-                                      )
-                             )
-    @param  array $A        List of points
-    @return array           List of possible classifications, ordered DESC by
-                                likelines
+    @param  list datasets [
+                            {'data' => ...,
+                             'accepted_formula_id' => ...,
+                             'id' => ...,
+                             'formula_in_latex' => ...,
+                            }
+                          ]
+    @param  list A   List of points
+    @return list     List of possible classifications, ordered DESC by
+                       likelines
     """
     results = []
     for key, dataset in enumerate(datasets):
@@ -281,7 +287,8 @@ def classify(datasets, A, epsilon=0):
             B = douglas_peucker(pointLineList(B), epsilon)
         else:
             B = pointLineList(B)
-        B = scale_and_center(list_of_pointlists2pointlist(B[:])) # TODO: eventuell sollten hier wirklich alle lieninen genommen werden
+        # TODO: eventuell sollten hier wirklich alle Linien genommen werden
+        B = scale_and_center(list_of_pointlists2pointlist(B[:]))
         results.append({"dtw": dtw(A, B),
                         "latex": dataset['accepted_formula_id'],
                         "id": dataset['id'],
@@ -302,8 +309,7 @@ def classify(datasets, A, epsilon=0):
     results = [{'formula_id': key, 'dtw': el} for key, el in results2.items()]
     results = sorted(results, key=lambda k: k['dtw'], reverse=True)[:10]
 
-    results = get_probability_from_distance(results)
-    return results
+    return get_probability_from_distance(results)
 
 if __name__ == "__main__":
     import doctest

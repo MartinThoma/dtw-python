@@ -13,7 +13,7 @@ import sys
 
 def crossvalidation():
     # Parameters for self-testing
-    MIN_OCCURENCES = 80
+    MIN_OCCURENCES = 10
     K_FOLD = 10
     EPSILON = 0
     CENTER = False
@@ -49,6 +49,11 @@ def crossvalidation():
                               })
                 i = (i + 1) % K_FOLD
 
+    for i, dataclass in enumerate(cv):
+        logging.debug("class: %i" % i)
+        for data in cv[i]:
+            logging.debug("id: %s, formula_id: %s, accepted: %s, latex: %s" % (data['id'], data['formula_id'], data['accepted_formula_id'], data['formula_in_latex']))
+
     # Start getting validation results
     classification_accuracy = []
     print("\n\n")
@@ -73,9 +78,7 @@ def crossvalidation():
             # Prepare datasets the algorithm may use
             datasets = []
             for key, value in enumerate(cv):
-                if key == testset:
-                    continue
-                else:
+                if key != testset:
                     datasets += value
 
             results = classify(datasets, A, EPSILON)
@@ -88,14 +91,14 @@ def crossvalidation():
                 # high.
                 print("\nRaw_data_id = %i\n" % testdata['id'])
             else:
-                answer_id = results[0].keys()[0]
+                answer_id = results[0]['formula_id']
 
             if answer_id == testdata['formula_id']:
                 classification_accuracy[testset]['correct'] += 1
             else:
                 classification_accuracy[testset]['wrong'] += 1
 
-            if testdata['formula_id'] in [r.keys()[0] for r in results]:
+            if testdata['formula_id'] in [r['formula_id'] for r in results]:
                 classification_accuracy[testset]['c10'] += 1
             else:
                 classification_accuracy[testset]['w10'] += 1
@@ -119,7 +122,8 @@ def crossvalidation():
         t1sum += classification_accuracy[testset]['accuracy']
         t10sum += classification_accuracy[testset]['a10']
 
-    print("\n" + str(datetime.date.today()) + "\n")
+    print("\n" + "-"*80)
+    print(str(datetime.date.today()))
     print("The following %i symbols were evaluated:" % symbol_counter)
     print(", ".join(symbols))
     print("raw datasets: %i" % raw_data_counter)

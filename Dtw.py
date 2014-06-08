@@ -4,6 +4,9 @@
 
 
 import logging
+logging.basicConfig(filename='classifier.log',
+                    level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s: %(message)s')
 
 class Dtw(object):
     def __init__(self, seq1, seq2, distance_func=None):
@@ -67,18 +70,18 @@ class Dtw(object):
             if len(A) == 0 or len(B) == 0:
                 logging.error("This should not happen (0)")
                 return 0
-            # if len(A) == 1:
-            #     logging.info("A had only one")
-            #     a2 = A.pop()
-            #     for p in B:
-            #         d = d + self._distance_func(a2, p)
-            #     return d
-            # if len(B) == 1:
-            #     logging.info("B had only one")
-            #     b2 = B.pop()
-            #     for p in A:
-            #         d = d + self._distance_func(b2, p)
-            #     return d
+            if len(A) == 1:
+                logging.info("A had only one")
+                logging.info(A)
+                a2 = A.pop()
+                for p in B:
+                    d = d + self._distance_func(a2, p)
+                return d
+            if len(B) == 1:
+                b2 = B.pop()
+                for p in A:
+                    d = d + self._distance_func(b2, p)
+                return d
             a = A.pop(0)
             b = B.pop(0)
             d = self._distance_func(a, b)
