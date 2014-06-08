@@ -17,6 +17,8 @@ def get_bounding_box(pointlist):
 
     >>> get_bounding_box([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}])
     {'minx': 0, 'miny': 0, 'maxx': 1, 'maxy': 1}
+    >>> get_bounding_box([{'x': 12, 'y': 10}, {'x': 1, 'y': 1}])
+    {'minx': 1, 'miny': 1, 'maxx': 12, 'maxy': 10}
     """
     minx = pointlist[0]["x"]
     maxx = pointlist[0]["x"]
@@ -80,71 +82,53 @@ def distance(p1, p2):
     @param  associative array $p2 second point
     @return float
 
-    >>> distance({'x': 0, 'y': 0}, {'x': 10, 'y': 5})
-    125
+    >>> distance({'x': 0, 'y': 0}, {'x': 3, 'y': 4})
+    5.0
+    >>> '%.2f' % distance({'x': 0, 'y': 0}, {'x': 1, 'y': 22})
+    '22.02'
     """
     dx = p1["x"] - p2["x"]
     dy = p1["y"] - p2["y"]
-    return dx*dx + dy*dy
+    return sqrt(dx*dx + dy*dy)
 
 
-def maximum_dtw(var):
-    return (var['dtw'] < 20)
-
-
-def greedyMatchingDTW(A, B):
+def dtw(A, B, simple=True):
     """ Calculate the distance of A and B by greedy dynamic time warping.
     @param  list A list of points
     @param  list B list of points
     @return float  Minimal distance you have to move points from A to get B
 
-    >>> greedyMatchingDTW([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], \
-                          [{'x': 0, 'y': 0}, {'x': 0, 'y': 2}])
-    2
+    >>> '%.2f' % dtw([{'x': 0, 'y': 0}, {'x': 1, 'y': 1}], \
+                          [{'x': 0, 'y': 0}, {'x': 0, 'y': 5}], False)
+    '4.12'
+    >>> '%.2f' % dtw([{'x': 0, 'y': 0}, {'x':0, 'y': 10}, \
+                                    {'x': 1, 'y': 22}, {'x': 2, 'y': 2}], \
+                          [{'x': 0, 'y': 0}, {'x': 0, 'y': 5}], False)
+    '25.63'
+    >>> '%.2f' % dtw( [{'x': 0, 'y': 0}, {'x': 0, 'y': 5}], \
+                                    [{'x': 0, 'y': 0}, {'x':0, 'y': 10}, \
+                                    {'x': 1, 'y': 22}, {'x': 2, 'y': 2}], \
+                      False)
+    '25.63'
     """
     global logging
     if len(A) == 0:
         logging.warning("A was empty. B:")
         logging.warning(A)
         logging.warning("B:")
-        logging.warning(B)
+        #logging.warning(B)
+        throw
         return 0
     if len(B) == 0:
         logging.warning("B was empty. A:")
-        logging.warning(A)
+        #logging.warning(A)
         logging.warning("B:")
-        logging.warning(B)
+        #logging.warning(B)
         return 0
+    from Dtw import Dtw
+    a = Dtw(A[:], B, distance)
 
-    a = A.pop(0)
-    b = B.pop(0)
-    d = distance(a, b)
-    asV = A.pop(0)
-    bsV = B.pop(0)
-    while (len(A) > 0 and len(B)):
-        l = distance(asV, b)
-        m = distance(asV, bsV)
-        r = distance(a, bsV)
-        mu = min(l, m, r)
-        d = d + mu
-        if (l == mu):
-            a = asV
-            asV = A.pop(0)
-        elif (r == mu):
-            b = bsV
-            bsV = B.pop(0)
-        else:
-            a = asV
-            b = bsV
-            asV = A.pop(0)
-            bsV = B.pop(0)
-    if (len(A) == 0):
-        for p in B:
-            d = d + distance(asV, p)
-    elif (len(B) == 0):
-        for p in A:
-            d = d + distance(bsV, p)
-    return d
+    return a.calculate(simple)
 
 
 def LotrechterAbstand(p1, p2, p3):
@@ -214,7 +198,7 @@ def DouglasPeucker(PointList, epsilon):
     return ResultList
 
 
-def apply_douglas_peucker(pointlist, epsilon):
+def douglas_peucker(pointlist, epsilon):
     """
      Apply the Douglas-Peucker algorithm to each line of $pointlist seperately.
      @param  array $pointlist see pointList()
@@ -225,55 +209,19 @@ def apply_douglas_peucker(pointlist, epsilon):
     return pointlist
 
 
-def get_path(data, epsilon=0):
-    path = ""
-    data = pointLineList(data)
-    if not (type(data) is list):
-        print("This was not an array!")  # TODO debug message
-        var_dump(data)
-        return False
-
-    if epsilon > 0:
-        data = apply_douglas_peucker(data, epsilon)
-
-    for line in data:
-        for i, point in enumerate(line):
-            if i == 0:
-                path += " M " + point['x'] + " " + point['y']
-            else:
-                path += " L " + point['x'] + " " + point['y']
-
-    return path
-
-
 def pointLineList(linelistP):
+    """Get a list of lists of tuples from a JSON string.
+       Those lists represent lines with control points.
+    >>> pointLineList('[[{"x":606,"y":411,"time":33}, {"x":605,"y":411,"time":35}, {"x":605,"y":412,"time":39}]]')
+    [[{u'y': 411, u'x': 606, u'time': 33}, {u'y': 411, u'x': 605, u'time': 35}, {u'y': 412, u'x': 605, u'time': 39}]]
+    """
     global logging
     linelist = json.loads(linelistP)
-    pointlist = []
-    for line in linelist:
-        l = []
-        for p in line:
-            l.append({"x": p['x'], "y": p['y']})
-        pointlist.append(l)
 
-    if len(pointlist) == 0:
+    if len(linelist) == 0:
         logging.waring("Pointlist was empty. Search for '" +
                        linelistP + "' in `wm_raw_draw_data`.")
-    return pointlist
-
-
-def pointList(linelistP):
-    linelist = json_decode(linelistP)  # TODO
-    pointlist = []
-    for line in linelist:
-        for p in line:
-            pointlist.append({"x": p['x'], "y": p['y']})
-
-    if (len(pointlist) == 0):
-        logging.warning("Pointlist was empty. Search for '" +
-                        linelistP + "' in `wm_raw_draw_data`.")
-
-    return pointlist
+    return linelist
 
 
 def list_of_pointlists2pointlist(data):
@@ -284,15 +232,20 @@ def list_of_pointlists2pointlist(data):
 
 
 def get_dimensions(pointlist):
-    a = get_bounding_box(pointlist) # TODO
+    a = get_bounding_box(pointlist)
     return {"width": a['maxx'] - a['minx'], "height": a['maxy'] - a['miny']}
 
 
 def get_probability_from_distance(results):
+    """ Get a list of results with dtw and formula id and return a dict mapping
+        formula-ids to probabilities.
+    """
     # check if one distance is 0 and meanwhile build sum of distances.
     sum = 0.0
-    modified = []
-    for formula_id, dtw in results.items():
+    modified = {}
+    for result in results:
+        formula_id = result['formula_id']
+        dtw = result['dtw']
         if dtw == 0:
             return {formula_id: 1}
         else:
@@ -322,35 +275,32 @@ def classify(datasets, A, epsilon=0):
                                 likelines
     """
     results = []
-
     for key, dataset in enumerate(datasets):
         B = dataset['data']
         if (epsilon > 0):
-            B = apply_douglas_peucker(pointLineList(B), epsilon)
+            B = douglas_peucker(pointLineList(B), epsilon)
         else:
             B = pointLineList(B)
-        B = scale_and_center(list_of_pointlists2pointlist(B))
-        results.append({"dtw": greedyMatchingDTW(A, B),
+        B = scale_and_center(list_of_pointlists2pointlist(B[:])) # TODO: eventuell sollten hier wirklich alle lieninen genommen werden
+        results.append({"dtw": dtw(A, B),
                         "latex": dataset['accepted_formula_id'],
                         "id": dataset['id'],
                         "latex": dataset['formula_in_latex'],
                         "formula_id": dataset['formula_id']})
 
     results = sorted(results, key=lambda k: k['dtw'])
-    results = filter(maximum_dtw, results)
-
+    results = filter(lambda var: var['dtw'] < 20, results)
     # get only best match for each single symbol
-    results2 = []
-    for key, row in enumerate(results):
+    results2 = {}
+    for row in results:
         if row['formula_id'] in results2:
             results2[row['formula_id']] = min(results2[row['formula_id']],
                                               row['dtw'])
-            continue
         else:
             results2[row['formula_id']] = row['dtw']
 
-    results = results2
-    results = results[:10]
+    results = [{'formula_id': key, 'dtw': el} for key, el in results2.items()]
+    results = sorted(results, key=lambda k: k['dtw'], reverse=True)[:10]
 
     results = get_probability_from_distance(results)
     return results
