@@ -27,11 +27,11 @@ def get_bounding_box(pointlist):
     for p in pointlist:
         if p["x"] < minx:
             minx = p["x"]
-        if p["x"] > maxx:
+        elif p["x"] > maxx:
             maxx = p["x"]
         if p["y"] < miny:
             miny = p["y"]
-        if p["y"] > maxy:
+        elif p["y"] > maxy:
             maxy = p["y"]
     return {"minx": minx, "maxx": maxx, "miny": miny, "maxy": maxy}
 
@@ -129,7 +129,7 @@ def dtw(A, B, simple=True):
         #logging.warning(B)
         return 0
     from Dtw import Dtw
-    a = Dtw(A[:], B[:], distance)  # Probably is slicing not necessary for B
+    a = Dtw(A[:], B[:], lambda a, b: distance(a, b, True))  # Probably is slicing not necessary for B
 
     return a.calculate(simple)
 
@@ -253,7 +253,9 @@ def get_probability_from_distance(results):
         formula_id = result['formula_id']
         dtw = result['dtw']
         if dtw == 0:
-            return {formula_id: 1}
+            logging.warning("Probability of 1!: %s" % str(formula_id))
+            logging.warning(results)
+            return [{'formula_id': formula_id, 'p': 1}]
         else:
             modified[formula_id] = exp(-dtw)
             summe += modified[formula_id]
@@ -307,7 +309,7 @@ def classify(datasets, A, epsilon=0):
             results2[row['formula_id']] = row['dtw']
 
     results = [{'formula_id': key, 'dtw': el} for key, el in results2.items()]
-    results = sorted(results, key=lambda k: k['dtw'], reverse=True)[:10]
+    results = sorted(results, key=lambda k: k['dtw'])[:10]
 
     return get_probability_from_distance(results)
 
