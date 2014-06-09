@@ -11,7 +11,7 @@ Center: False
 * Top-10-Classification (10-fold cross-validated): 0.98299
 Average time: 0.35017 seconds
 --------------------------------------------------------------------------------
-2014-06-08
+2014-06-08: Pop elements from the front
 The following 122 symbols were evaluated:
 A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, \rightarrow, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, \pi, \alpha, \beta, \sum, \sigma, a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, \Sigma, \gamma, \Gamma, \delta, \Delta, \zeta, \eta, \theta, \Theta, \epsilon, \varepsilon, \iota, \kappa, \varkappa, \lambda, \Lambda, \mu, \nu, \xi, \Pi, \rho, \varrho, \tau, \phi, \Phi, \varphi, \chi, \psi, \Psi, \omega, \Omega, \partial, \int, \cdot, \leq, \geq, <, >, \subset, \supset, \subseteq, \supseteq, \cong, \propto, -, +, \mathbb{R}, \copyright, \checkmark, \nabla, \heartsuit, \frownie, \Frowny, \textasciitilde, \mathbb{Q}
 raw datasets: 3261
@@ -20,3 +20,26 @@ Center: False
 * Top-1-Classification (10-fold cross-validated): 0.83109
 * Top-10-Classification (10-fold cross-validated): 0.97570
 Average time: 2.67622 seconds
+--------------------------------------------------------------------------------
+2014-06-09: Pop elements from the end
+The following 122 symbols were evaluated:
+A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, \rightarrow, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, \pi, \alpha, \beta, \sum, \sigma, a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, \Sigma, \gamma, \Gamma, \delta, \Delta, \zeta, \eta, \theta, \Theta, \epsilon, \varepsilon, \iota, \kappa, \varkappa, \lambda, \Lambda, \mu, \nu, \xi, \Pi, \rho, \varrho, \tau, \phi, \Phi, \varphi, \chi, \psi, \Psi, \omega, \Omega, \partial, \int, \cdot, \leq, \geq, <, >, \subset, \supset, \subseteq, \supseteq, \cong, \propto, -, +, \mathbb{R}, \copyright, \checkmark, \nabla, \heartsuit, \frownie, \Frowny, \textasciitilde, \mathbb{Q}
+raw datasets: 3261
+Epsilon: 0.00
+Center: False
+* Top-1-Classification (10-fold cross-validated): 0.83157
+* Top-10-Classification (10-fold cross-validated): 0.97619
+Average time: 2.59648 seconds
+Squared quadratic: True
+--------------------------------------------------------------------------------
+2014-06-09: Deque+deepcopy instead of list+[:]
+The following 122 symbols were evaluated:
+A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, \rightarrow, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, \pi, \alpha, \beta, \sum, \sigma, a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, \Sigma, \gamma, \Gamma, \delta, \Delta, \zeta, \eta, \theta, \Theta, \epsilon, \varepsilon, \iota, \kappa, \varkappa, \lambda, \Lambda, \mu, \nu, \xi, \Pi, \rho, \varrho, \tau, \phi, \Phi, \varphi, \chi, \psi, \Psi, \omega, \Omega, \partial, \int, \cdot, \leq, \geq, <, >, \subset, \supset, \subseteq, \supseteq, \cong, \propto, -, +, \mathbb{R}, \copyright, \checkmark, \nabla, \heartsuit, \frownie, \Frowny, \textasciitilde, \mathbb{Q}
+raw datasets: 3261
+Epsilon: 0.00
+Center: False
+* Top-1-Classification (10-fold cross-validated): 0.83157
+* Top-10-Classification (10-fold cross-validated): 0.97619
+Average time: 4.43854 seconds
+Squared quadratic: True
+python selftest.py  14462,58s user 4,53s system 99% cpu 4:01:15,17 total

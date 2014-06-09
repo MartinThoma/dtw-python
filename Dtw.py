@@ -82,11 +82,11 @@ class Dtw(object):
                 for p in A:
                     d = d + self._distance_func(b2, p)
                 return d
-            a = A.pop(0)
-            b = B.pop(0)
+            a = A.pop()
+            b = B.pop()
             d = self._distance_func(a, b)
-            a2 = A.pop(0)
-            b2 = B.pop(0)
+            a2 = A.pop()
+            b2 = B.pop()
             while len(A) > 0 and len(B) > 0:
                 l = self._distance_func(a2, b)
                 m = self._distance_func(a2, b2)
@@ -95,15 +95,15 @@ class Dtw(object):
                 d += mu
                 if (l == mu):
                     a = a2
-                    a2 = A.pop(0)
+                    a2 = A.pop()
                 elif (r == mu):
                     b = b2
-                    b2 = B.pop(0)
+                    b2 = B.pop()
                 else:
                     a = a2
                     b = b2
-                    a2 = A.pop(0)
-                    b2 = B.pop(0)
+                    a2 = A.pop()
+                    b2 = B.pop()
             if len(A) == 0:
                 for p in B:
                     d += self._distance_func(a2, p)
