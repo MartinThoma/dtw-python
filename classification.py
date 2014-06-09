@@ -129,7 +129,7 @@ def dtw(A, B, simple=True):
         #logging.warning(B)
         return 0
     from Dtw import Dtw
-    a = Dtw(A[:], B[:], lambda a, b: distance(a, b, True))  # Probably is slicing not necessary for B
+    a = Dtw(A[:], B, lambda a, b: distance(a, b, True))
 
     return a.calculate(simple)
 
