@@ -12,6 +12,36 @@ logging.basicConfig(filename='classificationpy.log',
                     format='%(asctime)s %(levelname)s: %(message)s')
 
 
+def space_evenly(pointlist, number=100):
+    """Space the points evenly.
+
+    >>> space_evenly([{u'y': 397, u'x': 244, u'time': 69}, {u'y': 394, u'x': 245, u'time': 77}, {u'y': 389, u'x': 246, u'time': 84}, {u'y': 383, u'x': 246, u'time': 92}, {u'y': 378, u'x': 248, u'time': 100}, {u'y': 368, u'x': 250, u'time': 108}, {u'y': 359, u'x': 251, u'time': 116}, {u'y': 349, u'x': 253, u'time': 124}, {u'y': 337, u'x': 256, u'time': 132}, {u'y': 325, u'x': 256, u'time': 141}, {u'y': 313, u'x': 258, u'time': 149}, {u'y': 303, u'x': 260, u'time': 157}, {u'y': 292, u'x': 262, u'time': 164}, {u'y': 282, u'x': 263, u'time': 172}, {u'y': 271, u'x': 265, u'time': 181}, {u'y': 263, u'x': 267, u'time': 189}, {u'y': 254, u'x': 269, u'time': 197}, {u'y': 248, u'x': 271, u'time': 204}, {u'y': 241, u'x': 271, u'time': 212}, {u'y': 237, u'x': 273, u'time': 220}, {u'y': 233, u'x': 274, u'time': 228}, {u'y': 232, u'x': 275, u'time': 236}, {u'y': 231, u'x': 275, u'time': 244}, {u'y': 230, u'x': 276, u'time': 252}, {u'y': 229, u'x': 276, u'time': 269}, {u'y': 231, u'x': 277, u'time': 405}, {u'y': 234, u'x': 278, u'time': 414}, {u'y': 236, u'x': 279, u'time': 420}, {u'y': 240, u'x': 281, u'time': 428}, {u'y': 245, u'x': 283, u'time': 436}, {u'y': 251, u'x': 285, u'time': 444}, {u'y': 258, u'x': 287, u'time': 452}, {u'y': 266, u'x': 292, u'time': 460}, {u'y': 275, u'x': 296, u'time': 468}, {u'y': 285, u'x': 300, u'time': 476}, {u'y': 295, u'x': 305, u'time': 484}, {u'y': 305, u'x': 307, u'time': 492}, {u'y': 313, u'x': 309, u'time': 500}, {u'y': 321, u'x': 311, u'time': 509}, {u'y': 329, u'x': 313, u'time': 517}, {u'y': 337, u'x': 315, u'time': 524}, {u'y': 345, u'x': 317, u'time': 532}, {u'y': 351, u'x': 317, u'time': 540}, {u'y': 357, u'x': 319, u'time': 548}, {u'y': 363, u'x': 321, u'time': 556}, {u'y': 370, u'x': 323, u'time': 564}, {u'y': 374, u'x': 323, u'time': 572}, {u'y': 377, u'x': 324, u'time': 580}, {u'y': 379, u'x': 324, u'time': 588}, {u'y': 380, u'x': 324, u'time': 596}, {u'y': 382, u'x': 325, u'time': 604}, {u'y': 384, u'x': 325, u'time': 612}, {u'y': 385, u'x': 325, u'time': 620}, {u'y': 387, u'x': 326, u'time': 629}, {u'y': 388, u'x': 326, u'time': 637}, {u'y': 389, u'x': 326, u'time': 645}, {u'y': 390, u'x': 326, u'time': 652}], 5)
+    """
+    import numpy
+    from scipy.interpolate import interp1d
+    if len(pointlist) < 4:
+        return pointlist
+    pointlist = sorted(pointlist, key=lambda p: p['time'])
+    x = []
+    y = []
+    t = []
+    for point in pointlist:
+        if point['time'] not in t:
+            x.append(point['x'])
+            y.append(point['y'])
+            t.append(point['time'])
+    x = numpy.array(x)
+    y = numpy.array(y)
+    fx = interp1d(t, x, kind='linear')
+    fy = interp1d(t, y, kind='linear')
+    tnew = numpy.linspace(t[0], t[-1], number)
+    pointlist = []
+
+    for x, y in zip(fx(tnew), fy(tnew)):
+        pointlist.append({'x': x, 'y': y})
+    return pointlist
+
+
 def get_bounding_box(pointlist):
     """ Get the bounding box of a pointlist.
 
@@ -36,13 +66,10 @@ def get_bounding_box(pointlist):
     return {"minx": minx, "maxx": maxx, "miny": miny, "maxy": maxy}
 
 
-def scale_and_center(pointlist, center=False):
-    """ Take a list of points and scale and move it so that it's in the unit
-        square. Keep the aspect ratio. Optionally center the points inside of
-        the unit square.
-
-        >>> scale_and_center([{'x': 0, 'y': 0}, {'x': 10, 'y': 10}])
-        [{'y': 0.0, 'x': 0.0}, {'y': 1.0, 'x': 1.0}]
+def get_scale_and_center_parameters(pointlist, center=False):
+    """ Take a list of points and calculate the factors for scaling and moving
+        it so that it's in the unit square. Keept the aspect ratio.
+        Optionally center the points inside of the unit square.
     """
     a = get_bounding_box(pointlist)
 
@@ -69,9 +96,29 @@ def scale_and_center(pointlist, center=False):
         else:
             addx = add
 
-    for key, p in enumerate(pointlist):
-        pointlist[key] = {"x": (p["x"] - a['minx']) * factor + addx,
-                          "y": (p["y"] - a['miny']) * factor + addy}
+    return {"factor": factor, "addx": addx, "addy": addy,
+            "minx": a['minx'], "miny": a['miny']}
+
+
+def scale_and_center(pointlist, center=False):
+    """ Take a list of points and scale and move it so that it's in the unit
+        square. Keep the aspect ratio. Optionally center the points inside of
+        the unit square.
+
+        >>> scale_and_center([{'x': 0, 'y': 0}, {'x': 10, 'y': 10}])
+        [{'y': 0.0, 'x': 0.0}, {'y': 1.0, 'x': 1.0}]
+    """
+
+    flat_pointlist = list_of_pointlists2pointlist(pointlist)
+
+    tmp = get_scale_and_center_parameters(flat_pointlist, center)
+    factor, addx, addy = tmp['factor'], tmp['addx'], tmp['addy']
+    minx, miny = tmp['minx'], tmp['miny']
+
+    for linenr, line in enumerate(pointlist):
+        for key, p in enumerate(line):
+            pointlist[linenr][key] = {"x": (p["x"] - minx) * factor + addx,
+                                      "y": (p["y"] - miny) * factor + addy}
 
     return pointlist
 
@@ -95,7 +142,7 @@ def distance(p1, p2, squared=False):
         return sqrt(dx*dx + dy*dy)
 
 
-def dtw(A, B, simple=True):
+def dtw(A, B, simple=True, SQUARED=True):
     """ Calculate the distance of A and B by greedy dynamic time warping.
     @param  list A list of points
     @param  list B list of points
@@ -128,10 +175,22 @@ def dtw(A, B, simple=True):
         logging.warning("B:")
         #logging.warning(B)
         return 0
-    from Dtw import Dtw
-    a = Dtw(A[:], B, lambda a, b: distance(a, b, True))
 
-    return a.calculate(simple)
+    distanceSum = 0.0
+    if isinstance(A[0], list):
+        if len(A) != len(B):
+            return float("inf")
+        else:
+            from Dtw import Dtw
+            for lineA, lineB in zip(A, B):
+                a = Dtw(lineA[:], lineB, lambda a, b: distance(a, b, SQUARED))
+                distanceSum += a.calculate(simple)
+    else:
+        from Dtw import Dtw
+        a = Dtw(A[:], B, lambda a, b: distance(a, b, SQUARED))
+        distanceSum += a.calculate(simple)
+
+    return distanceSum
 
 
 def LotrechterAbstand(p1, p2, p3):
@@ -268,9 +327,10 @@ def get_probability_from_distance(results):
     return sorted(probabilities, key=lambda k: k['p'], reverse=True)
 
 
-def classify(datasets, A, epsilon=0):
+def classify(datasets, A, EPSILON=0, THRESHOLD=100, FLATTEN=True,
+             SPACE_EVENLY=False, POINTS=100):
     """
-    Classify A with data from datasets and smoothing of epsilon.
+    Classify A with data from datasets and smoothing of EPSILON.
     @param  list datasets [
                             {'data' => ...,
                              'accepted_formula_id' => ...,
@@ -285,12 +345,22 @@ def classify(datasets, A, epsilon=0):
     results = []
     for key, dataset in enumerate(datasets):
         B = dataset['data']
-        if (epsilon > 0):
-            B = douglas_peucker(pointLineList(B), epsilon)
+        if (EPSILON > 0):
+            B = douglas_peucker(pointLineList(B), EPSILON)
         else:
             B = pointLineList(B)
-        # TODO: eventuell sollten hier wirklich alle Linien genommen werden
-        B = scale_and_center(list_of_pointlists2pointlist(B[:]))
+
+        if SPACE_EVENLY:
+            Bnew = []
+            for line in B:
+                Bnew.append(space_evenly(line, POINTS))
+            B = Bnew
+
+        B = scale_and_center(B)
+
+        if FLATTEN:
+            B = list_of_pointlists2pointlist(B)
+
         results.append({"dtw": dtw(A, B),
                         "latex": dataset['accepted_formula_id'],
                         "id": dataset['id'],
@@ -298,7 +368,7 @@ def classify(datasets, A, epsilon=0):
                         "formula_id": dataset['formula_id']})
 
     results = sorted(results, key=lambda k: k['dtw'])
-    results = filter(lambda var: var['dtw'] < 20, results)
+    results = filter(lambda var: var['dtw'] < THRESHOLD, results)
     # get only best match for each single symbol
     results2 = {}
     for row in results:

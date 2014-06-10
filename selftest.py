@@ -17,6 +17,10 @@ def crossvalidation():
     K_FOLD = 10
     EPSILON = 0
     CENTER = False
+    FLATTEN = False
+    THRESHOLD = 100
+    SPACE_EVENLY = True
+    POINTS = 100 # Does only make sense with SPACE_EVENLY=True
 
     # Prepare crossvalidation data set
     cv = [[], [], [], [], [], [], [], [], [], []]
@@ -49,11 +53,6 @@ def crossvalidation():
                               })
                 i = (i + 1) % K_FOLD
 
-    for i, dataclass in enumerate(cv):
-        logging.debug("class: %i" % i)
-        for data in cv[i]:
-            logging.debug("id: %s, formula_id: %s, accepted: %s, latex: %s" % (data['id'], data['formula_id'], data['accepted_formula_id'], data['formula_in_latex']))
-
     # Start getting validation results
     classification_accuracy = []
     print("\n\n")
@@ -68,12 +67,26 @@ def crossvalidation():
             start = time.time()
             raw_draw_data = testdata['data']
             if EPSILON > 0:
-                result_path = douglas_peucker(pointLineList(raw_draw_data), EPSILON)
+                result_path = douglas_peucker(pointLineList(raw_draw_data),
+                                              EPSILON)
             else:
                 result_path = pointLineList(raw_draw_data)
 
-            A = scale_and_center(list_of_pointlists2pointlist(result_path),
-                                 CENTER)
+            A = []
+            for line in result_path:
+                #line = space_evenly(line, 100)
+                A.append(line)
+
+            if SPACE_EVENLY:
+                Anew = []
+                for line in A:
+                    Anew.append(space_evenly(line, POINTS))
+                A = Anew
+
+            A = scale_and_center(A, CENTER)
+
+            if FLATTEN:
+                A = list_of_pointlists2pointlist(A)
 
             # Prepare datasets the algorithm may use
             datasets = []
@@ -81,7 +94,8 @@ def crossvalidation():
                 if key != testset:
                     datasets += value
 
-            results = classify(datasets, A, EPSILON)
+            results = classify(datasets, A, EPSILON, THRESHOLD, FLATTEN,
+                               SPACE_EVENLY, POINTS)
             end = time.time()
             execution_time.append(end - start)
 
@@ -89,7 +103,8 @@ def crossvalidation():
             if len(results) == 0:
                 # That should not happen. Threshold of maximum_dtw might be too
                 # high.
-                print("\nRaw_data_id = %i\n" % testdata['id'])
+                logging.debug("Raw_data_id = %i as testdata got no results" %
+                              testdata['id'])
             else:
                 answer_id = results[0]['formula_id']
 
@@ -97,6 +112,11 @@ def crossvalidation():
                 classification_accuracy[testset]['correct'] += 1
             else:
                 classification_accuracy[testset]['wrong'] += 1
+                logging.warning(("Got raw_data_id %i wrong. "
+                                 "It is %i, but I thought it would be %i.") %
+                                (testdata['id'],
+                                 testdata['formula_id'],
+                                 answer_id))
 
             if testdata['formula_id'] in [r['formula_id'] for r in results]:
                 classification_accuracy[testset]['c10'] += 1
@@ -129,10 +149,13 @@ def crossvalidation():
     print("raw datasets: %i" % raw_data_counter)
     print("Epsilon: %0.2f" % EPSILON)
     print("Center: %r" % CENTER)
+    print("Squared quadratic: False")
+    print("Flatten: %r" % FLATTEN)
+    print("Threshold: %r" % THRESHOLD)
+    print("Space evenly: %r (%i points)" % (SPACE_EVENLY, POINTS))
     print("* Top-1-Classification (%i-fold cross-validated): %0.5f" % (K_FOLD, (t1sum/K_FOLD)))
     print("* Top-10-Classification (%i-fold cross-validated): %0.5f" % (K_FOLD, t10sum/K_FOLD))
     print("Average time: %.5f seconds" % (sum(execution_time)/len(execution_time)))
-    print("Squared quadratic: True")
 
 if __name__ == '__main__':
     logging.basicConfig(filename='selftest.log',
