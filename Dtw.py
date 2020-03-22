@@ -3,18 +3,23 @@
 # http://en.wikipedia.org/wiki/Dynamic_time_warping
 
 
+# Core Library modules
 import logging
-logging.basicConfig(filename='classifier.log',
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s: %(message)s')
+
+logging.basicConfig(
+    filename="classifier.log",
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s: %(message)s",
+)
+
 
 class Dtw(object):
     def __init__(self, seq1, seq2, distance_func=None):
-        '''
+        """
         seq1, seq2 are two lists,
         distance_func is a function for calculating
         the local distance between two elements.
-        '''
+        """
         self._seq1 = seq1
         self._seq2 = seq2
         self._distance_func = distance_func if distance_func else lambda: 0
@@ -30,35 +35,44 @@ class Dtw(object):
         return ret
 
     def calculate_backward(self, i1, i2):
-        '''
+        """
         Calculate the dtw distance between
         seq1[:i1 + 1] and seq2[:i2 + 1]
-        '''
+        """
         if self._map.get((i1, i2)) is not None:
             return self._map[(i1, i2)]
 
         if i1 == -1 or i2 == -1:
-            self._map[(i1, i2)] = float('inf')
-            return float('inf')
+            self._map[(i1, i2)] = float("inf")
+            return float("inf")
 
-        min_i1, min_i2 = min((i1 - 1, i2), (i1, i2 - 1), (i1 - 1, i2 - 1),
-                             key=lambda x: self.calculate_backward(*x))
+        min_i1, min_i2 = min(
+            (i1 - 1, i2),
+            (i1, i2 - 1),
+            (i1 - 1, i2 - 1),
+            key=lambda x: self.calculate_backward(*x),
+        )
 
-        self._map[(i1, i2)] = self.get_distance(i1, i2) + \
-            self.calculate_backward(min_i1, min_i2)
+        self._map[(i1, i2)] = self.get_distance(i1, i2) + self.calculate_backward(
+            min_i1, min_i2
+        )
 
         return self._map[(i1, i2)]
 
     def get_path(self):
-        '''
+        """
         Calculate the path mapping.
         Must be called after calculate()
-        '''
+        """
         i1, i2 = (len(self._seq1) - 1, len(self._seq2) - 1)
         while (i1, i2) != (-1, -1):
             self._path.append((i1, i2))
-            min_i1, min_i2 = min((i1 - 1, i2), (i1, i2 - 1), (i1 - 1, i2 - 1),
-                                 key=lambda x: self._map[x[0], x[1]])
+            min_i1, min_i2 = min(
+                (i1 - 1, i2),
+                (i1, i2 - 1),
+                (i1 - 1, i2 - 1),
+                key=lambda x: self._map[x[0], x[1]],
+            )
             i1, i2 = min_i1, min_i2
         return self._path
 
@@ -93,10 +107,10 @@ class Dtw(object):
                 r = self._distance_func(a, b2)
                 mu = min(l, m, r)
                 d += mu
-                if (l == mu):
+                if l == mu:
                     a = a2
                     a2 = A.pop()
-                elif (r == mu):
+                elif r == mu:
                     b = b2
                     b2 = B.pop()
                 else:
@@ -112,5 +126,4 @@ class Dtw(object):
                     d += self._distance_func(b2, p)
             return d
         else:
-            return self.calculate_backward(len(self._seq1) - 1,
-                                           len(self._seq2) - 1)
+            return self.calculate_backward(len(self._seq1) - 1, len(self._seq2) - 1)

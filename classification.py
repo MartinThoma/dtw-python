@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Core Library modules
 import json
-from math import sqrt, exp
+import logging
+from math import exp, sqrt
 
 CLASSIFIER_NAME = "dtw-python"
 
-import logging
-logging.basicConfig(filename='classificationpy.log',
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s: %(message)s')
+
+logging.basicConfig(
+    filename="classificationpy.log",
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s: %(message)s",
+)
 
 
 def space_evenly(pointlist, number=100):
@@ -19,26 +23,27 @@ def space_evenly(pointlist, number=100):
     """
     import numpy
     from scipy.interpolate import interp1d
+
     if len(pointlist) < 4:
         return pointlist
-    pointlist = sorted(pointlist, key=lambda p: p['time'])
+    pointlist = sorted(pointlist, key=lambda p: p["time"])
     x = []
     y = []
     t = []
     for point in pointlist:
-        if point['time'] not in t:
-            x.append(point['x'])
-            y.append(point['y'])
-            t.append(point['time'])
+        if point["time"] not in t:
+            x.append(point["x"])
+            y.append(point["y"])
+            t.append(point["time"])
     x = numpy.array(x)
     y = numpy.array(y)
-    fx = interp1d(t, x, kind='linear')
-    fy = interp1d(t, y, kind='linear')
+    fx = interp1d(t, x, kind="linear")
+    fy = interp1d(t, y, kind="linear")
     tnew = numpy.linspace(t[0], t[-1], number)
     pointlist = []
 
     for x, y in zip(fx(tnew), fy(tnew)):
-        pointlist.append({'x': x, 'y': y})
+        pointlist.append({"x": x, "y": y})
     return pointlist
 
 
@@ -73,16 +78,16 @@ def get_scale_and_center_parameters(pointlist, center=False):
     """
     a = get_bounding_box(pointlist)
 
-    width = a['maxx'] - a['minx']
-    height = a['maxy'] - a['miny']
+    width = a["maxx"] - a["minx"]
+    height = a["maxy"] - a["miny"]
 
     factorX = 1
     factorY = 1
     if width != 0:
-        factorX = 1./width
+        factorX = 1.0 / width
 
     if height != 0:
-        factorY = 1./height
+        factorY = 1.0 / height
 
     factor = min(factorX, factorY)
     addx = 0
@@ -96,8 +101,13 @@ def get_scale_and_center_parameters(pointlist, center=False):
         else:
             addx = add
 
-    return {"factor": factor, "addx": addx, "addy": addy,
-            "minx": a['minx'], "miny": a['miny']}
+    return {
+        "factor": factor,
+        "addx": addx,
+        "addy": addy,
+        "minx": a["minx"],
+        "miny": a["miny"],
+    }
 
 
 def scale_and_center(pointlist, center=False):
@@ -112,13 +122,15 @@ def scale_and_center(pointlist, center=False):
     flat_pointlist = list_of_pointlists2pointlist(pointlist)
 
     tmp = get_scale_and_center_parameters(flat_pointlist, center)
-    factor, addx, addy = tmp['factor'], tmp['addx'], tmp['addy']
-    minx, miny = tmp['minx'], tmp['miny']
+    factor, addx, addy = tmp["factor"], tmp["addx"], tmp["addy"]
+    minx, miny = tmp["minx"], tmp["miny"]
 
     for linenr, line in enumerate(pointlist):
         for key, p in enumerate(line):
-            pointlist[linenr][key] = {"x": (p["x"] - minx) * factor + addx,
-                                      "y": (p["y"] - miny) * factor + addy}
+            pointlist[linenr][key] = {
+                "x": (p["x"] - minx) * factor + addx,
+                "y": (p["y"] - miny) * factor + addy,
+            }
 
     return pointlist
 
@@ -137,9 +149,9 @@ def distance(p1, p2, squared=False):
     dx = p1["x"] - p2["x"]
     dy = p1["y"] - p2["y"]
     if squared:
-        return (dx*dx + dy*dy)
+        return dx * dx + dy * dy
     else:
-        return sqrt(dx*dx + dy*dy)
+        return sqrt(dx * dx + dy * dy)
 
 
 def dtw(A, B, simple=True, SQUARED=True):
@@ -166,14 +178,14 @@ def dtw(A, B, simple=True, SQUARED=True):
         logging.warning("A was empty. B:")
         logging.warning(A)
         logging.warning("B:")
-        #logging.warning(B)
+        # logging.warning(B)
         throw
         return 0
     if len(B) == 0:
         logging.warning("B was empty. A:")
-        #logging.warning(A)
+        # logging.warning(A)
         logging.warning("B:")
-        #logging.warning(B)
+        # logging.warning(B)
         return 0
 
     distanceSum = 0.0
@@ -182,11 +194,13 @@ def dtw(A, B, simple=True, SQUARED=True):
             return float("inf")
         else:
             from Dtw import Dtw
+
             for lineA, lineB in zip(A, B):
                 a = Dtw(lineA[:], lineB, lambda a, b: distance(a, b, SQUARED))
                 distanceSum += a.calculate(simple)
     else:
         from Dtw import Dtw
+
         a = Dtw(A[:], B, lambda a, b: distance(a, b, SQUARED))
         distanceSum += a.calculate(simple)
 
@@ -200,26 +214,26 @@ def LotrechterAbstand(p1, p2, p3):
      * @param array $p2 associative array with "x" and "y" (end of line)
      * @param array $p3 associative array with "x" and "y" (point)
     """
-    x3 = p3['x']
-    y3 = p3['y']
+    x3 = p3["x"]
+    y3 = p3["y"]
 
-    px = p2['x']-p1['x']
-    py = p2['y']-p1['y']
+    px = p2["x"] - p1["x"]
+    py = p2["y"] - p1["y"]
 
-    something = px*px + py*py
-    if (something == 0):
+    something = px * px + py * py
+    if something == 0:
         # TODO: really?
         return 0
 
-    u = ((x3 - p1['x']) * px + (y3 - p1['y']) * py) / something
+    u = ((x3 - p1["x"]) * px + (y3 - p1["y"]) * py) / something
 
     if u > 1:
         u = 1
     elif u < 0:
         u = 0
 
-    x = p1['x'] + u * px
-    y = p1['y'] + u * py
+    x = p1["x"] + u * px
+    y = p1["y"] + u * py
 
     dx = x - x3
     dy = y - y3
@@ -230,7 +244,7 @@ def LotrechterAbstand(p1, p2, p3):
     # can just return the squared distance instead
     # (i.e. remove the sqrt) to gain a little performance
 
-    dist = sqrt(dx*dx + dy*dy)
+    dist = sqrt(dx * dx + dy * dy)
     return dist
 
 
@@ -247,14 +261,14 @@ def DouglasPeucker(PointList, epsilon):
     # Wenn die maximale Entfernung größer als Epsilon ist, dann rekursiv
     # vereinfachen
     if dmax >= epsilon:
-            # Recursive call
-            recResults1 = DouglasPeucker(PointList[0:index], epsilon)
-            recResults2 = DouglasPeucker(PointList[index:], epsilon)
+        # Recursive call
+        recResults1 = DouglasPeucker(PointList[0:index], epsilon)
+        recResults2 = DouglasPeucker(PointList[index:], epsilon)
 
-            # Ergebnisliste aufbauen
-            ResultList = recResults1[:-1] + recResults2
+        # Ergebnisliste aufbauen
+        ResultList = recResults1[:-1] + recResults2
     else:
-            ResultList = [PointList[0], PointList[-1]]
+        ResultList = [PointList[0], PointList[-1]]
 
     # Ergebnis zurückgeben
     return ResultList
@@ -281,8 +295,9 @@ def pointLineList(linelistP):
     linelist = json.loads(linelistP)
 
     if len(linelist) == 0:
-        logging.waring("Pointlist was empty. Search for '" +
-                       linelistP + "' in `wm_raw_draw_data`.")
+        logging.waring(
+            "Pointlist was empty. Search for '" + linelistP + "' in `wm_raw_draw_data`."
+        )
     return linelist
 
 
@@ -295,7 +310,7 @@ def list_of_pointlists2pointlist(data):
 
 def get_dimensions(pointlist):
     a = get_bounding_box(pointlist)
-    return {"width": a['maxx'] - a['minx'], "height": a['maxy'] - a['miny']}
+    return {"width": a["maxx"] - a["minx"], "height": a["maxy"] - a["miny"]}
 
 
 def get_probability_from_distance(results):
@@ -309,12 +324,12 @@ def get_probability_from_distance(results):
     summe = 0.0
     modified = {}
     for result in results:
-        formula_id = result['formula_id']
-        dtw = result['dtw']
+        formula_id = result["formula_id"]
+        dtw = result["dtw"]
         if dtw == 0:
             logging.warning("Probability of 1!: %s" % str(formula_id))
             logging.warning(results)
-            return [{'formula_id': formula_id, 'p': 1}]
+            return [{"formula_id": formula_id, "p": 1}]
         else:
             modified[formula_id] = exp(-dtw)
             summe += modified[formula_id]
@@ -323,12 +338,13 @@ def get_probability_from_distance(results):
 
     probabilities = []
     for formula_id, p in results.items():
-        probabilities.append({'formula_id': formula_id, 'p': p / summe})
-    return sorted(probabilities, key=lambda k: k['p'], reverse=True)
+        probabilities.append({"formula_id": formula_id, "p": p / summe})
+    return sorted(probabilities, key=lambda k: k["p"], reverse=True)
 
 
-def classify(datasets, A, EPSILON=0, THRESHOLD=100, FLATTEN=True,
-             SPACE_EVENLY=False, POINTS=100):
+def classify(
+    datasets, A, EPSILON=0, THRESHOLD=100, FLATTEN=True, SPACE_EVENLY=False, POINTS=100
+):
     """
     Classify A with data from datasets and smoothing of EPSILON.
     @param  list datasets [
@@ -344,8 +360,8 @@ def classify(datasets, A, EPSILON=0, THRESHOLD=100, FLATTEN=True,
     """
     results = []
     for key, dataset in enumerate(datasets):
-        B = dataset['data']
-        if (EPSILON > 0):
+        B = dataset["data"]
+        if EPSILON > 0:
             B = douglas_peucker(pointLineList(B), EPSILON)
         else:
             B = pointLineList(B)
@@ -361,28 +377,33 @@ def classify(datasets, A, EPSILON=0, THRESHOLD=100, FLATTEN=True,
         if FLATTEN:
             B = list_of_pointlists2pointlist(B)
 
-        results.append({"dtw": dtw(A, B),
-                        "latex": dataset['accepted_formula_id'],
-                        "id": dataset['id'],
-                        "latex": dataset['formula_in_latex'],
-                        "formula_id": dataset['formula_id']})
+        results.append(
+            {
+                "dtw": dtw(A, B),
+                "latex": dataset["accepted_formula_id"],
+                "id": dataset["id"],
+                "latex": dataset["formula_in_latex"],
+                "formula_id": dataset["formula_id"],
+            }
+        )
 
-    results = sorted(results, key=lambda k: k['dtw'])
-    results = filter(lambda var: var['dtw'] < THRESHOLD, results)
+    results = sorted(results, key=lambda k: k["dtw"])
+    results = filter(lambda var: var["dtw"] < THRESHOLD, results)
     # get only best match for each single symbol
     results2 = {}
     for row in results:
-        if row['formula_id'] in results2:
-            results2[row['formula_id']] = min(results2[row['formula_id']],
-                                              row['dtw'])
+        if row["formula_id"] in results2:
+            results2[row["formula_id"]] = min(results2[row["formula_id"]], row["dtw"])
         else:
-            results2[row['formula_id']] = row['dtw']
+            results2[row["formula_id"]] = row["dtw"]
 
-    results = [{'formula_id': key, 'dtw': el} for key, el in results2.items()]
-    results = sorted(results, key=lambda k: k['dtw'])[:10]
+    results = [{"formula_id": key, "dtw": el} for key, el in results2.items()]
+    results = sorted(results, key=lambda k: k["dtw"])[:10]
 
     return get_probability_from_distance(results)
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
