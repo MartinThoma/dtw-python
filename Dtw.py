@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # An pure python implemetation of Dynamic Time Warpping
 # http://en.wikipedia.org/wiki/Dynamic_time_warping
 
@@ -13,7 +12,7 @@ logging.basicConfig(
 )
 
 
-class Dtw(object):
+class Dtw:
     def __init__(self, seq1, seq2, distance_func=None):
         """
         seq1, seq2 are two lists,

@@ -7,6 +7,6 @@ import sys
 from index import app as application
 
 logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0,"/var/www/dtw-python/")
+sys.path.insert(0, "/var/www/dtw-python/")
 
-application.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RTsss'
+application.secret_key = "A0Zr98j/3yX R~XHH!jmN]LWX/,?RTsss"
